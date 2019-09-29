@@ -77,7 +77,7 @@ void MaxPool(int cur_layer, double *input)
 
     // pool_size_H = PoolSizeH[cur_layer];
     // pool_size_V = PoolSizeV[cur_layer];
-    
+
     // stride_size_H = StrideH[cur_layer];
     // stride_size_V = StrideV[cur_layer];
     /*-------------current layer info-------------------*/
@@ -114,12 +114,12 @@ void MaxPool(int cur_layer, double *input)
                 {
                     for(int in_col = col_start; in_col <= col_stop; in_col++)
                     {
-                        double x = in_ptr[(out_c * prior_rows + in_row) * prior_cols + in_col]; 
+                        double x = in_ptr[(out_c * prior_rows + in_row) * prior_cols + in_col];
                         if(x > value)
                         {
                             value = x;
                             poolmax_id[cur_layer][out_idx] = in_row * prior_cols + in_col; // Save max value postion, used for backprop
-                        } 
+                        }
                     } // end in_col
                 } // end in_row
 
@@ -143,7 +143,11 @@ int main()
         if(i % 2 == 0)
             cout << endl;
     }
-        
+
+    for(int i = 0; i < 4; i++)
+        cout << poolmax_id[2][i] << " ";
+    cout << endl;
+
 
     return 0;
 }
