@@ -22,10 +22,18 @@ int out_cnt = 2;
 
 void Linear(int ilayer, const double *input, int activation)
 {
+
+    /*-------------weights-------------------*/
     // weights for connect prior layer to this layer
     double *wt_ptr;
 
     wt_ptr = layer_weights;
+
+    /*-------------weights-------------------*/
+
+
+
+    /*-------------prior layer info-------------------*/
 
     // info about prior layer
     int num_in_neuron;
@@ -44,12 +52,16 @@ void Linear(int ilayer, const double *input, int activation)
     // else // activation value is input
     // {
     //     num_in_neuron = nhid[ilayer-1];
-    //     val_in_neuron = activ_val[ilayer-1];
+    //     val_in_neuron = active_val[ilayer-1];
 
     // }
 
+    /*-------------prior layer info-------------------*/
 
 
+
+
+    /*-------------current layer info-------------------*/
 
     // info about this layer
     int num_out_neuron;
@@ -71,8 +83,15 @@ void Linear(int ilayer, const double *input, int activation)
     //     val_out_neuron = activ_val[ilayer-1];
     // }
 
-    double sum = 0.0;
+    /*-------------current layer info-------------------*/
 
+
+    /*-------------save output value-------------------*/
+    double sum = 0.0;
+    /*-------------save output value-------------------*/
+
+
+    /*-------------compute-------------------*/
     // compute this layer's all neuron value
     for(int i_out = 0; i_out < num_out_neuron; i_out++)
     {
@@ -93,6 +112,8 @@ void Linear(int ilayer, const double *input, int activation)
 
         val_out_neuron[i_out] = sum;
     }
+
+    /*-------------compute-------------------*/
 
 }
 
