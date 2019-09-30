@@ -101,7 +101,7 @@ void MaxPool(int cur_layer, double *input)
         {
             for(int out_w = 0; out_w < width[cur_layer]; out_w++)
             {
-                // Compute activation of current layer's neuron at (i_c, i_h, i_w)
+                // Compute activation of current layer's neuron at (out_c, out_h, out_w)
                 // Pooling layer don't use padding, so don't need to worry about outbound of prior layer
                 row_start = stride_size_V * out_h;
                 row_stop  = row_start + pool_size_V - 1;
