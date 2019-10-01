@@ -1,9 +1,5 @@
 #include <cstdio>
 
-
-// __constant__ float *d_weights; 
-
-
 __global__ void Linear_cu(float *weights, float *input, float *res)
 {
     int n_inputs, ihid;

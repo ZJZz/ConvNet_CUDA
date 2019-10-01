@@ -5,8 +5,6 @@
 
 using namespace std;
 
-
-
 // Test
 int channel[5] = {1,1,1,1,1};
 int height[5]  = {3,3,3,3,3};
@@ -172,7 +170,7 @@ int main()
 
     for(int i = 1; i <= 9; i++)
     {
-        cout << res[i-1] << " ";
+        cout << res[i-1] << "  ";
         if(i % 3 == 0)
             cout << endl;
     }
