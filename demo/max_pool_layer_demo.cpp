@@ -25,6 +25,9 @@ poolsize: 2*2 strid: 2
 3  2  1  0    ---MaxPool--->  3  4
 1  2  3  4
 
+
+poolmax-id: 5 7 8 11
+
 */
 
 double out_res[4];
