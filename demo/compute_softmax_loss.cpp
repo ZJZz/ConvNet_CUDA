@@ -49,14 +49,13 @@ void compute_loss(int batch_start, int batch_end)
             if(labels[i] > tmax)
             {
                 imax = i;
-                tmax = labels[i];         
+                tmax = labels[i];
             }
         }
         err   = -log(output[imax] + 1.e-30);
-        loss += err;  
+        loss += err;
     }
-    
-    
+
 }
 
 
@@ -67,6 +66,6 @@ int main()
     //     cout << output[i] << " ";
     // cout << endl;
     compute_loss(0,1);
-    cout << loss << endl;
+    cout << loss << endl; // 1.09861
     return 0;
 }
