@@ -1,0 +1,336 @@
+TileX: 0 TileY: 0 
+   InX: 0 
+       InY: 1          2176
+       InY: 2          2304
+       InY: 3          2432
+       InY: 4          2560
+   InX: 1 
+       InY: 1          4224
+       InY: 2          4352
+       InY: 3          4480
+       InY: 4          4608
+   InX: 2 
+       InY: 1          6272
+       InY: 2          6400
+       InY: 3          6528
+       InY: 4          6656
+   InX: 3 
+       InY: 1          8320
+       InY: 2          8448
+       InY: 3          8576
+       InY: 4          8704
+TileX: 0 TileY: 1 
+   InX: 0 
+       InY: 1          2688
+       InY: 2          2816
+       InY: 3          2944
+       InY: 4          3072
+   InX: 1 
+       InY: 1          4736
+       InY: 2          4864
+       InY: 3          4992
+       InY: 4          5120
+   InX: 2 
+       InY: 1          6784
+       InY: 2          6912
+       InY: 3          7040
+       InY: 4          7168
+   InX: 3 
+       InY: 1          8832
+       InY: 2          8960
+       InY: 3          9088
+       InY: 4          9216
+TileX: 0 TileY: 2 
+   InX: 0 
+       InY: 1          3200
+       InY: 2          3328
+       InY: 3          3456
+       InY: 4          3584
+   InX: 1 
+       InY: 1          5248
+       InY: 2          5376
+       InY: 3          5504
+       InY: 4          5632
+   InX: 2 
+       InY: 1          7296
+       InY: 2          7424
+       InY: 3          7552
+       InY: 4          7680
+   InX: 3 
+       InY: 1          9344
+       InY: 2          9472
+       InY: 3          9600
+       InY: 4          9728
+TileX: 0 TileY: 3 
+   InX: 0 
+       InY: 1          3712
+       InY: 2          3840
+       InY: 3          3968 x
+       InY: 4          4096 x
+   InX: 1 
+       InY: 1          5760
+       InY: 2          5888
+       InY: 3          6016 x
+       InY: 4          6144 x
+   InX: 2 
+       InY: 1          7808
+       InY: 2          7936
+       InY: 3          8064 x
+       InY: 4          8192 x
+   InX: 3 
+       InY: 1          9856
+       InY: 2          9984
+       InY: 3          10112 x
+       InY: 4          10240 x
+TileX: 1 TileY: 0 
+   InX: 0 
+       InY: 1          10368
+       InY: 2          10496
+       InY: 3          10624
+       InY: 4          10752
+   InX: 1 
+       InY: 1          12416
+       InY: 2          12544
+       InY: 3          12672
+       InY: 4          12800
+   InX: 2 
+       InY: 1          14464
+       InY: 2          14592
+       InY: 3          14720
+       InY: 4          14848
+   InX: 3 
+       InY: 1          16512
+       InY: 2          16640
+       InY: 3          16768
+       InY: 4          16896
+TileX: 1 TileY: 1 
+   InX: 0 
+       InY: 1          10880
+       InY: 2          11008
+       InY: 3          11136
+       InY: 4          11264
+   InX: 1 
+       InY: 1          12928
+       InY: 2          13056
+       InY: 3          13184
+       InY: 4          13312
+   InX: 2 
+       InY: 1          14976
+       InY: 2          15104
+       InY: 3          15232
+       InY: 4          15360
+   InX: 3 
+       InY: 1          17024
+       InY: 2          17152
+       InY: 3          17280
+       InY: 4          17408
+TileX: 1 TileY: 2 
+   InX: 0 
+       InY: 1          11392
+       InY: 2          11520
+       InY: 3          11648
+       InY: 4          11776
+   InX: 1 
+       InY: 1          13440
+       InY: 2          13568
+       InY: 3          13696
+       InY: 4          13824
+   InX: 2 
+       InY: 1          15488
+       InY: 2          15616
+       InY: 3          15744
+       InY: 4          15872
+   InX: 3 
+       InY: 1          17536
+       InY: 2          17664
+       InY: 3          17792
+       InY: 4          17920
+TileX: 1 TileY: 3 
+   InX: 0 
+       InY: 1          11904
+       InY: 2          12032
+       InY: 3          12160 x
+       InY: 4          12288 x
+   InX: 1 
+       InY: 1          13952
+       InY: 2          14080
+       InY: 3          14208 x
+       InY: 4          14336 x
+   InX: 2 
+       InY: 1          16000
+       InY: 2          16128
+       InY: 3          16256 x
+       InY: 4          16384 x
+   InX: 3 
+       InY: 1          18048
+       InY: 2          18176
+       InY: 3          18304 x
+       InY: 4          18432 x
+TileX: 2 TileY: 0 
+   InX: 0 
+       InY: 1          18560
+       InY: 2          18688
+       InY: 3          18816
+       InY: 4          18944
+   InX: 1 
+       InY: 1          20608
+       InY: 2          20736
+       InY: 3          20864
+       InY: 4          20992
+   InX: 2 
+       InY: 1          22656
+       InY: 2          22784
+       InY: 3          22912
+       InY: 4          23040
+   InX: 3 
+       InY: 1          24704
+       InY: 2          24832
+       InY: 3          24960
+       InY: 4          25088
+TileX: 2 TileY: 1 
+   InX: 0 
+       InY: 1          19072
+       InY: 2          19200
+       InY: 3          19328
+       InY: 4          19456
+   InX: 1 
+       InY: 1          21120
+       InY: 2          21248
+       InY: 3          21376
+       InY: 4          21504
+   InX: 2 
+       InY: 1          23168
+       InY: 2          23296
+       InY: 3          23424
+       InY: 4          23552
+   InX: 3 
+       InY: 1          25216
+       InY: 2          25344
+       InY: 3          25472
+       InY: 4          25600
+TileX: 2 TileY: 2 
+   InX: 0 
+       InY: 1          19584
+       InY: 2          19712
+       InY: 3          19840
+       InY: 4          19968
+   InX: 1 
+       InY: 1          21632
+       InY: 2          21760
+       InY: 3          21888
+       InY: 4          22016
+   InX: 2 
+       InY: 1          23680
+       InY: 2          23808
+       InY: 3          23936
+       InY: 4          24064
+   InX: 3 
+       InY: 1          25728
+       InY: 2          25856
+       InY: 3          25984
+       InY: 4          26112
+TileX: 2 TileY: 3 
+   InX: 0 
+       InY: 1          20096
+       InY: 2          20224
+       InY: 3          20352 x
+       InY: 4          20480 x
+   InX: 1 
+       InY: 1          22144
+       InY: 2          22272
+       InY: 3          22400 x
+       InY: 4          22528 x
+   InX: 2 
+       InY: 1          24192
+       InY: 2          24320
+       InY: 3          24448 x
+       InY: 4          24576 x
+   InX: 3 
+       InY: 1          26240
+       InY: 2          26368
+       InY: 3          26496 x
+       InY: 4          26624 x
+TileX: 3 TileY: 0 
+   InX: 0 
+       InY: 1          26752
+       InY: 2          26880
+       InY: 3          27008
+       InY: 4          27136
+   InX: 1 
+       InY: 1          28800
+       InY: 2          28928
+       InY: 3          29056
+       InY: 4          29184
+   InX: 2 
+       InY: 1          30848 x
+       InY: 2          30976 x
+       InY: 3          31104 x
+       InY: 4          31232 x
+   InX: 3 
+       InY: 1          32896 x
+       InY: 2          33024 x
+       InY: 3          33152 x
+       InY: 4          33280 x
+TileX: 3 TileY: 1 
+   InX: 0 
+       InY: 1          27264
+       InY: 2          27392
+       InY: 3          27520
+       InY: 4          27648
+   InX: 1 
+       InY: 1          29312
+       InY: 2          29440
+       InY: 3          29568
+       InY: 4          29696
+   InX: 2 
+       InY: 1          31360 x
+       InY: 2          31488 x
+       InY: 3          31616 x
+       InY: 4          31744 x
+   InX: 3 
+       InY: 1          33408 x
+       InY: 2          33536 x
+       InY: 3          33664 x
+       InY: 4          33792 x
+TileX: 3 TileY: 2 
+   InX: 0 
+       InY: 1          27776
+       InY: 2          27904
+       InY: 3          28032
+       InY: 4          28160
+   InX: 1 
+       InY: 1          29824
+       InY: 2          29952
+       InY: 3          30080
+       InY: 4          30208
+   InX: 2 
+       InY: 1          31872 x
+       InY: 2          32000 x
+       InY: 3          32128 x
+       InY: 4          32256 x
+   InX: 3 
+       InY: 1          33920 x
+       InY: 2          34048 x
+       InY: 3          34176 x
+       InY: 4          34304 x
+TileX: 3 TileY: 3 
+   InX: 0 
+       InY: 1          28288
+       InY: 2          28416
+       InY: 3          28544 x
+       InY: 4          28672 x
+   InX: 1 
+       InY: 1          30336
+       InY: 2          30464
+       InY: 3          30592 x
+       InY: 4          30720 x
+   InX: 2 
+       InY: 1          32384 x
+       InY: 2          32512 x
+       InY: 3          32640 x
+       InY: 4          32768 x
+   InX: 3 
+       InY: 1          34432 x
+       InY: 2          34560 x
+       InY: 3          34688 x
+       InY: 4          34816 x
