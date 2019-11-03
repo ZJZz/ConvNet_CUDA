@@ -1,6 +1,7 @@
 #include "softmax.h"
 #include "device_util.h"
 #include <cfloat>
+#include <cassert>
 #include <algorithm>
 
 
@@ -201,6 +202,38 @@ float Softmax::get_loss(Tensor* target)
 
 int Softmax::get_accuracy(Tensor* target)
 {
-	return 0;
+	int batch_size = output_->n();
+	int output_size = output_->size();
+
+	assert(batch_size == target->n());
+	assert(output_size == target->size());
+
+	float *h_output, *h_target;
+	int idx_output, idx_target;
+	int hit_count = 0;
+
+	// get predicts and targets
+	h_output = output_->get_host_ptr().get();
+	h_target = target->get_host_ptr().get();
+
+	// idx_output = idx_target = 0;
+	for (int b = 0; b < batch_size; b++)
+	{
+		idx_output = 0;
+		idx_target = 0;
+
+		for (int i = 1; i < 10; i++)
+		{
+			if (h_output[b * output_size + i] > h_output[b * output_size + idx_output])
+				idx_output = i;
+			if (h_target[b * output_size + i] > h_target[b * output_size + idx_target])
+				idx_target = i;
+		}
+
+		if (idx_output == idx_target)
+			hit_count++;
+	}
+
+	return hit_count;
 }
 
