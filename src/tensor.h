@@ -6,25 +6,26 @@
 #include <iostream>
 #include <cstdio>
 #include <array>
+#include <vector>
 
 class Tensor
 {
     public:
         // ctor
-        Tensor(int batch_num = 1, int channel = 1, int height = 1, int width = 1);
-        Tensor(Shape shape);
+        Tensor(int batch_num = 1, int channel = 1, int height = 1, int width = 1, std::vector<float> v = {});
+        Tensor(Shape shape, std::vector<float> v = {});
 
         // member function
         void allocateMemory();
-        void allocateMemoryIfNotAllocated(Shape& shape);
+        void allocateMemoryIfNotAllocated(Shape shape);
 
         void transfer_H2D();
         void transfer_D2H();
 
         // Tensor Dimension
-        std::array<int, 4> shape()
+       Shape shape()
         {
-        	return std::array<int, 4>({ shape_.n_, shape_.c_, shape_.h_, shape_.w_});
+        	return shape_;
         }
 
         int n() const { return shape_.n_; }
@@ -59,6 +60,8 @@ class Tensor
 
 
 
+
+
     private:
 
     	// member function
@@ -73,6 +76,8 @@ class Tensor
 
         bool device_allocated_;
         bool host_allocated_;
+
+        std::vector<float> init_vec_;
 
 };
 

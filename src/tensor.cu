@@ -1,17 +1,35 @@
 #include "tensor.h"
 #include <cuda_runtime.h>
+#include <cstdio>
 
-Tensor::Tensor(int batch_num, int channel, int height, int width):
-    shape_(batch_num, channel, height, width),d_data_(nullptr), h_data_(nullptr),device_allocated_(false), host_allocated_(false)
+__global__ void print(float * t)
+{
+	printf("%d ", t[threadIdx.x]);
+}
+
+
+Tensor::Tensor(int batch_num, int channel, int height, int width, std::vector<float> v):
+    shape_(batch_num, channel, height, width),d_data_(nullptr), h_data_(nullptr),device_allocated_(false), host_allocated_(false),
+    init_vec_(v)
 {
 	allocateMemoryIfNotAllocated(shape_);
 }
 
-Tensor::Tensor(Shape shape):Tensor(shape.n_, shape.c_, shape.h_, shape.w_)
+Tensor::Tensor(Shape shape, std::vector<float> v):Tensor(shape.n_, shape.c_, shape.h_, shape.w_, v)
 { }
 
 
-void Tensor::allocateMemoryIfNotAllocated(Shape& shape)
+//Tensor::Tensor(Shape shape, std::vector<float>& v):Tensor(shape.n_, shape.c_, shape.h_, shape.w_)
+//{
+//	init_vec_ = v;
+//	for(int i = 0; i < 10; i++)
+//		std:: cout <<init_vec_[i] << " ";
+//	std::cout << std::endl;
+//	allocateMemoryIfNotAllocated(shape_);
+//
+//}
+
+void Tensor::allocateMemoryIfNotAllocated(Shape shape)
 {
     if(!device_allocated_ && !host_allocated_)
     {
@@ -23,7 +41,12 @@ void Tensor::allocateMemoryIfNotAllocated(Shape& shape)
 void Tensor::allocateMemory()
 {
     allocateHostMemory();
+    std::cout << "host memory finised" << std::endl;
     allocateCudaMemory();
+    std::cout << "device memroy finised" << std::endl;
+    // test
+    transfer_H2D();
+
 }
 
 void Tensor::allocateHostMemory()
@@ -31,6 +54,20 @@ void Tensor::allocateHostMemory()
     if(!host_allocated_)
     {
         h_data_ = std::shared_ptr<float>(new float[shape_.total_elements()], [&](float *ptr){  delete[] ptr; });
+
+        if(!init_vec_.empty())
+        {
+        	for(int i = 0; i < shape_.total_elements(); i++)
+        	{
+        		h_data_.get()[i] = init_vec_[i];
+        	}
+        }
+
+        for(int i = 0; i < shape_.total_elements(); i++)
+        	std:: cout << h_data_.get()[i] << " ";
+        std::cout << std::endl;
+        std::cout << "in allocateHostMemory" << std::endl;
+
         host_allocated_ = true;
     }
 }
@@ -52,7 +89,7 @@ void Tensor::transfer_H2D()
     if(device_allocated_ && host_allocated_)
     {
         // get() ?
-        cudaMemcpy(h_data_.get(), d_data_.get(), shape_.total_elements() * sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_data_.get(), h_data_.get(), shape_.total_elements() * sizeof(float), cudaMemcpyHostToDevice);
         // TODO: add some exception handle
     }
     else

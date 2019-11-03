@@ -1,10 +1,8 @@
 #include "relu.h"
+#include "device_util.h"
 #include <cstdio>
 
- #define CUDA_KERNEL_LOOP(i, n) \
-   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
-        i < (n); \
-        i += blockDim.x * gridDim.x)
+
 
 __global__ void reluActivationForward(float* Z, float* A,
 									  int Z_n_dim, int Z_c_dim, int Z_h_dim,  int Z_w_dim)
@@ -28,15 +26,6 @@ __global__ void reluActivationBackward(float* Z, float* dA, float* dZ,
 	}
 }
 
-// CUDA: use 512 threads per block
- const int CUDA_NUM_THREADS = 512;
-
- // CUDA: number of blocks for threads.
- int GET_BLOCKS(const int N)
- {
-   return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
- }
-
 ReLU::ReLU(std::string name)
 {
 	std::cout << "Ctor ReLU" << std::endl;
@@ -44,16 +33,7 @@ ReLU::ReLU(std::string name)
 }
 
 ReLU::~ReLU()
-{
-	if(input_ != nullptr)
-		delete input_;
-	if(output_ != nullptr)
-		delete output_;
-	if(grad_input_ != nullptr)
-		delete grad_input_;
-	if(grad_output_ != nullptr)
-		delete grad_output_;
-}
+{}
 
 
 Tensor* ReLU::forward(Tensor* input)
