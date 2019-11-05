@@ -216,7 +216,6 @@ int Softmax::get_accuracy(Tensor* target)
 	h_output = output_->get_host_ptr().get();
 	h_target = target->get_host_ptr().get();
 
-	// idx_output = idx_target = 0;
 	for (int b = 0; b < batch_size; b++)
 	{
 		idx_output = 0;
