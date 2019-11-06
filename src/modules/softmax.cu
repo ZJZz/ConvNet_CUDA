@@ -3,6 +3,7 @@
 #include <cfloat>
 #include <cassert>
 #include <algorithm>
+#include <cuda_runtime.h>
 
 
 
@@ -62,6 +63,8 @@ __global__ void kernel_channel_sum(int num, int channels, int spatial_dim,
 	}
 }
 
+
+
 __global__ void kernel_channel_div(int count, int num, int channels, int spatial_dim,
 		                           float* channel_sum, float* data)
 {
@@ -73,7 +76,9 @@ __global__ void kernel_channel_div(int count, int num, int channels, int spatial
 	}
 }
 
-__global__ void kernel_saxpy(int n, float alpha, float* x, float* y)
+
+
+__global__ void kernel_saxpy_softmax(int n, float alpha, float* x, float* y)
 {
 	int i = blockIdx.x*blockDim.x + threadIdx.x;
 	if (i < n) y[i] = alpha * x[i] + y[i];
@@ -160,6 +165,8 @@ Tensor* Softmax::backward(Tensor* target)
 {
 	cudaDeviceSynchronize();
 
+	std::cout << "In " << name_ << " backward" << std::endl;
+
 	if (grad_input_ == nullptr || batch_size_ != target->n())
 	{
 		if (grad_input_ == nullptr)
@@ -179,7 +186,7 @@ Tensor* Softmax::backward(Tensor* target)
 
 	// set grad_input_ = predict - target
 	int count = grad_input_->len();
-	kernel_saxpy<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, -1, target->get_device_ptr().get(), grad_input_->get_device_ptr().get());
+	kernel_saxpy_softmax<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, -1, target->get_device_ptr().get(), grad_input_->get_device_ptr().get());
 
 	// normalize the grad_output by the batch size
 	int grad_output_size = target->n() * target->c() * target->h() * target->w();

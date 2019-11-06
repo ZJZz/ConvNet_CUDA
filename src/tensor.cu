@@ -41,9 +41,9 @@ void Tensor::allocateMemoryIfNotAllocated(Shape shape)
 void Tensor::allocateMemory()
 {
     allocateHostMemory();
-    std::cout << "host memory finised" << std::endl;
+    //std::cout << "host memory finised" << std::endl;
     allocateCudaMemory();
-    std::cout << "device memroy finised" << std::endl;
+    //std::cout << "device memroy finised" << std::endl;
     // test
     transfer_H2D();
 
@@ -63,10 +63,10 @@ void Tensor::allocateHostMemory()
         	}
         }
 
-        for(int i = 0; i < shape_.total_elements(); i++)
-        	std:: cout << h_data_.get()[i] << " ";
-        std::cout << std::endl;
-        std::cout << "in allocateHostMemory" << std::endl;
+//        for(int i = 0; i < shape_.total_elements(); i++)
+//        	std:: cout << h_data_.get()[i] << " ";
+//        std::cout << std::endl;
+        //std::cout << "in allocateHostMemory" << std::endl;
 
         host_allocated_ = true;
     }

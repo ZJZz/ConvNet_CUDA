@@ -100,8 +100,6 @@ void Network::update(float learning_rate)
 
 void Network::train()
 {
-	phase_ = training;
-
 	// unfreeze all layers
 	for (auto layer : layers_)
 	{
@@ -111,8 +109,6 @@ void Network::train()
 
 void Network::test()
 {
-	phase_ = inference;
-
 	// freeze all layers
 	for (auto layer : layers_)
 	{

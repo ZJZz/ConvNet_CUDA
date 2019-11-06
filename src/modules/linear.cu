@@ -1,5 +1,6 @@
 #include "linear.h"
 
+
 #define BLOCK_DIM_1D    512
 #define BLOCK_DIM       16
 
@@ -79,19 +80,19 @@ __global__ void kernel_MatMul(float* A, float* B, float* C, int ARows, int ACols
 
 }
 
-__global__ void kernel_MatVec(float *device_Mat, float *device_Vect,int matRowSize, int vlength,double *device_ResVect)
+__global__ void kernel_MatVec(float *device_Mat, float *device_Vect,int matRowSize, int vlength, float *device_ResVect)
 {
-	int tidx = blockIdx.x*blockDim.x + threadIdx.x;
-	int tidy = blockIdx.y*blockDim.y + threadIdx.y;
-	int tindex=tidx+gridDim.x*BLOCKSIZE*tidy;
+	int tidx = blockIdx.x * blockDim.x + threadIdx.x;
+	int tidy = blockIdx.y * blockDim.y + threadIdx.y;
+	int tindex= tidx + gridDim.x * BLOCK_DIM * tidy;
 
 
 	if(tindex<matRowSize)
 	{
-		int i;int m=tindex*vlength;
+		int i;int m= tindex * vlength;
 		device_ResVect[tindex]=0.0f;
-		for(i=0;i<vlength;i++)
-			device_ResVect[tindex]+=device_Mat[m+i]*device_Vect[i];
+		for(i = 0; i < vlength; i++)
+			device_ResVect[tindex] +=  device_Mat[m+i] * device_Vect[i];
 	}
 
 	__syncthreads();
@@ -160,17 +161,23 @@ Tensor* Linear::forward(Tensor* input)
 
 		// initialize weights and biases
 		if (!freeze_)
-			init_weight_bias();
+		{
+			init_weight_bias(0);
+		}
 	}
 
 	dim3 threads,grid;
 
+	std::cout << "before transpose" << std::endl;
+
 	// transpose weights
 	threads = dim3(TILE_DIM, TILE_DIM);
-	grid = dim3(output_size_ + threads.x - 1) / threads.x, (input_size_ + threads.y - 1) / threads.y );
+	grid = dim3((output_size_ + threads.x - 1) / threads.x, (input_size_ + threads.y - 1) / threads.y );
 	kernel_transpose<<<grid, threads>>>(weights_trans_->get_device_ptr().get(),
 			          weights_->get_device_ptr().get(),
 			          output_size_, input_size_);
+
+	std::cout << "after transpose" << std::endl;
 
 	// weight MatMul
 	threads = dim3(TILE_DIM, TILE_DIM);
@@ -185,7 +192,7 @@ Tensor* Linear::forward(Tensor* input)
 			       output_size_, batch_size_,false);
 
 	 // bias
-	kernel_MatMul<<<grid, thread>>>(biases_->get_device_ptr().get(),
+	kernel_MatMul<<<grid, threads>>>(biases_->get_device_ptr().get(),
 			 	 	 	  d_one_vec,
 	 			       output_->get_device_ptr().get(),
 	 			       output_size_,  1,
@@ -193,11 +200,14 @@ Tensor* Linear::forward(Tensor* input)
 	 			       output_size_, batch_size_,true);
 
 
+	std::cout << "finished" << std::endl;
+
 	 return output_;
 }
 
 Tensor* Linear::backward(Tensor* grad_output)
 {
+	std::cout << "In " << name_ << " backward" << std::endl;
 	if (grad_weights_ == nullptr)
 	{
 		grad_weights_ = new Tensor(weights_->shape());
@@ -207,7 +217,7 @@ Tensor* Linear::backward(Tensor* grad_output)
 	if (grad_input_ == nullptr || batch_size_ != grad_output->n())
 	{
 		grad_output_  = grad_output;
-		grad_output_trans_ = new Tensor(1,1,batch_size_, output_size_)
+		grad_output_trans_ = new Tensor(1,1,batch_size_, output_size_);
 
 		if (grad_input_ == nullptr)
 			grad_input_   = new Tensor(input_->shape());
@@ -222,7 +232,7 @@ Tensor* Linear::backward(Tensor* grad_output)
 
 	// db = (dy) * d_one_vec - dim: (output_size * batch_size) (batch_size * 1)
 	int max_thredas= 16 * 16;
-	threads = dim3(16,16); // can change
+	threads = dim3(16,16); // 16 can change
 	grid = dim3(1, (batch_size_ + max_thredas - 1)  / max_thredas );
 
 	kernel_MatVec<<< grid, threads>>>(grad_output_->get_device_ptr().get(), d_one_vec, output_size_, batch_size_,
@@ -231,7 +241,7 @@ Tensor* Linear::backward(Tensor* grad_output)
 
 	// (dy)^T
 	threads = dim3(TILE_DIM, TILE_DIM);
-	grid = dim3(batch_size + threads.x - 1) / threads.x, (output_size + threads.y - 1) / threads.y);
+	grid = dim3((batch_size_ + threads.x - 1) / threads.x, (output_size_ + threads.y - 1) / threads.y);
 	kernel_transpose<<<grid,threads >>>(grad_output_trans_->get_device_ptr().get(),
 			         grad_output_->get_device_ptr().get(),
 			         batch_size_, output_size_);
@@ -241,21 +251,21 @@ Tensor* Linear::backward(Tensor* grad_output)
 	// dw = x * (dy)^T - dim: (input_size_ * batch_size) (batch_size * output_size_)
 	kernel_MatMul<<< grid, threads>>>(input_->get_device_ptr().get(), grad_output_trans_->get_device_ptr().get(),
 			               grad_weights_->get_device_ptr().get(),
-			               input_size_, batch_size,
-			               batch_size, output_size_,
+			               input_size_, batch_size_,
+			               batch_size_, output_size_,
 			               input_size_, output_size_, false);
 
-	if(!gradient_stop)
+	if(!gradient_stop_)
 	{
 		// dx = W * dy - dim: (input_size_, output_size_) (output_size * batch_size)
 		threads = dim3(TILE_DIM, TILE_DIM);
-		grid = dim3((batch_size + threads.x - 1) / threads.x, (input_size_ + threads.y - 1) / threads.y);
+		grid = dim3((batch_size_ + threads.x - 1) / threads.x, (input_size_ + threads.y - 1) / threads.y);
 		kernel_MatMul<<<grid, threads >>>(weights_->get_device_ptr().get(),
 				               grad_output_->get_device_ptr().get(),
 				               grad_input_->get_device_ptr().get(),
 				               input_size_, output_size_,
-				               output_size, batch_size,
-				               input_size_, batch_size, false);
+				               output_size_, batch_size_,
+				               input_size_, batch_size_, false);
 	}
 
 	return grad_input_;

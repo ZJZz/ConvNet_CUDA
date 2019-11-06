@@ -12,7 +12,7 @@ __global__ void reluActivationForward(float* Z, float* A,
 	{
 
 	    A[index] = Z[index] > 0 ? Z[index] : 0;
-	    printf("A:%f  Z:%f\n", A[index], Z[index]);
+	    //printf("A:%f  Z:%f\n", A[index], Z[index]);
 	}
 }
 
@@ -82,10 +82,17 @@ Tensor* ReLU::forward(Tensor* input)
 
 Tensor* ReLU::backward(Tensor* grad_pre)
 {
+	std::cout << "In " << name_ << " backward" << std::endl;
 
-	grad_input_->allocateMemoryIfNotAllocated(input_->shape());
+	grad_output_ = grad_pre;
+
+	if (grad_input_ == nullptr)
+	{
+		grad_input_ = new Tensor(input_->shape());
+	}
 
 	int count = input_->len();
+
 
 	// CUDA
 	reluActivationBackward<<<GET_BLOCKS(count), CUDA_NUM_THREADS>>>(input_->get_device_ptr().get(),
