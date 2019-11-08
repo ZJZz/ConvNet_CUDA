@@ -34,7 +34,7 @@ class NNLayer
 		void freeze()   { freeze_ = true; }
 		void unfreeze() { freeze_ = false; }
 
-		void init_weight_bias(unsigned int seed);
+		void init_weight_bias(unsigned int seed = 0);
 		void update_weights_biases(float learning_rate);
 
 

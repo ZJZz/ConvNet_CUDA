@@ -134,7 +134,7 @@ void Tensor::print_tensor(std::string name, bool view_param = false, int num_bat
 		std::cout << std::fixed;
 		std::cout.precision(6);
 
-		int max_print_line = 4;
+		int max_print_line = 20;
 		if(width == 28)
 		{
 			std::cout.precision(3);

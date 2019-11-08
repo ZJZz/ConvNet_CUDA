@@ -4,7 +4,7 @@
 
 struct Shape {
 
-    Shape(int n, int c, int h, int w);
+    Shape(int n=1, int c=1, int h=1, int w=1);
 
     int n() const { return n_; }
     int c() const { return c_; }

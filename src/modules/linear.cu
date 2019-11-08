@@ -183,7 +183,6 @@ Tensor* Linear::forward(Tensor* input)
 	threads = dim3(TILE_DIM, TILE_DIM);
 	grid = dim3((batch_size_ + threads.x - 1) / threads.x, (output_size_ + threads.y - 1) / threads.y);
 
-
 	kernel_MatMul<<<grid, threads>>>(weights_trans_->get_device_ptr().get(),
 			       input_->get_device_ptr().get(),
 			       output_->get_device_ptr().get(),
