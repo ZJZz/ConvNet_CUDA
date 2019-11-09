@@ -54,7 +54,8 @@ class Tensor
 		}
 
         // TODO:
-        //void reset(int n = 1, int c = 1, int h = 1, int w = 1);
+        void reset(int n = 1, int c = 1, int h = 1, int w = 1);
+        void reset(Shape shape);
 
         void print_tensor(std::string name, bool view_param, int num_batch, int width);
 

@@ -31,13 +31,16 @@ private:
 
 
     Shape output_size_;
-    int ouput_spatial_dim_ = 1;
+    int output_spatial_dim_ = 1;
 
 
 
     // convolution
 
     Tensor* col_buffer_ = nullptr;
+    Tensor* col_buffer_trans_ = nullptr;
+    Tensor* weights_trans_ = nullptr;
+
     float *d_one_vec_ = nullptr;
 
     void set_workspace();
@@ -48,12 +51,23 @@ private:
     void forward_bias(float* output, float* bias);
 
     void conv_im2col_wraper(float* data, float* col_buff);
+    void conv_col2im_wraper(float* col_buff, float* data);
+
     void conv_im2col(float* data_im, int channels,
         		         int height, int width,
         		         int kernel_h, int kernel_w,
         		         int pad_h, int pad_w,
         		         int stride_h, int stride_w,
         		         float* data_col);
+
+    void conv_col2im(float* data_col, int channels, int height, int width,
+    		         int kernel_h, int kernel_w, int pad_h, int pad_w,
+    		         int stride_h, int stride_w, float* data_im);
+
+    void backward_weight_gemm(float* input, float* ouput, float* weights);
+    void backward_input_gemm(float* output, float* weights, float* input);
+    void backward_bias_gemv(float* bias, float* input);
+
 };
 
 #endif // _CONV_H_

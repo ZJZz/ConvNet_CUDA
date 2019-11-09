@@ -80,7 +80,7 @@ __global__ void kernel_MatMul(float* A, float* B, float* C, int ARows, int ACols
 
 }
 
-__global__ void kernel_MatVec(float *device_Mat, float *device_Vect,int matRowSize, int vlength, float *device_ResVect)
+__global__ void kernel_MatVec(float *device_Mat, float *device_Vect,int matRowSize, int vlength, float *device_ResVect, bool add)
 {
 	int tidx = blockIdx.x * blockDim.x + threadIdx.x;
 	int tidy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -90,7 +90,7 @@ __global__ void kernel_MatVec(float *device_Mat, float *device_Vect,int matRowSi
 	if(tindex<matRowSize)
 	{
 		int i;int m= tindex * vlength;
-		device_ResVect[tindex]=0.0f;
+		if(!add) device_ResVect[tindex]=0.0f;
 		for(i = 0; i < vlength; i++)
 			device_ResVect[tindex] +=  device_Mat[m+i] * device_Vect[i];
 	}
@@ -235,7 +235,7 @@ Tensor* Linear::backward(Tensor* grad_output)
 	grid = dim3(1, (batch_size_ + max_thredas - 1)  / max_thredas );
 
 	kernel_MatVec<<< grid, threads>>>(grad_output_->get_device_ptr().get(), d_one_vec, output_size_, batch_size_,
-			      grad_biases_->get_device_ptr().get());
+			      grad_biases_->get_device_ptr().get(), false);
 
 
 	// (dy)^T

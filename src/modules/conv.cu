@@ -1,10 +1,12 @@
 #include "conv.h"
 #include "device_util.h"
 #include <vector>
+#include <iostream>
 
 
 #define BLOCK_DIM_1D    512
 #define TILE_DIM        16
+#define BLOCK_DIM       16
 
 __global__ void kernel_im2col(int n, float* data_im,
     int height, int width,
@@ -54,6 +56,78 @@ __global__ void kernel_im2col(int n, float* data_im,
 
 			}
 		}
+	}
+}
+
+
+__global__ void kernel_col2im(int n, float* data_col,
+    int height, int width, int channels,
+    int kernel_h, int kernel_w,
+    int pad_h, int pad_w,
+    int stride_h, int stride_w,
+    int height_col, int width_col,
+    float* data_im)
+{
+	CUDA_KERNEL_LOOP(index, n)
+	{
+		float val = 0;
+		const int w_im = index % width + pad_w;
+		const int h_im = (index / width) % height + pad_h;
+		const int c_im = index / (width * height);
+		int kernel_extent_w = (kernel_w - 1) * 1 + 1;
+		int kernel_extent_h = (kernel_h - 1) * 1 + 1;
+		// compute the start and end of the output
+		const int w_col_start =
+			(w_im < kernel_extent_w) ? 0 : (w_im - kernel_extent_w) / stride_w + 1;
+		const int w_col_end = min(w_im / stride_w + 1, width_col);
+		const int h_col_start =
+			(h_im < kernel_extent_h) ? 0 : (h_im - kernel_extent_h) / stride_h + 1;
+		const int h_col_end = min(h_im / stride_h + 1, height_col);
+		// TODO: use LCM of stride and dilation to avoid unnecessary loops
+		for (int h_col = h_col_start; h_col < h_col_end; h_col += 1)
+		{
+		  for (int w_col = w_col_start; w_col < w_col_end; w_col += 1)
+		  {
+			int h_k = (h_im - h_col * stride_h);
+			int w_k = (w_im - w_col * stride_w);
+			if (h_k % 1 == 0 && w_k % 1 == 0) {
+			  h_k /= 1;
+			  w_k /= 1;
+			  int data_col_index = (((c_im * kernel_h + h_k) * kernel_w + w_k) *
+									height_col + h_col) * width_col + w_col;
+			  val += data_col[data_col_index];
+			}
+		  }
+		}
+		data_im[index] = val;
+	}
+}
+
+__global__ void kernel_transpose_conv(float *odata, float *idata, int width, int height)
+{
+	__shared__ float block[TILE_DIM][TILE_DIM+1];
+
+	// read the matrix tile into shared memory
+    // load one element per thread from device memory (idata) and store it
+    // in transposed order in block[][]
+	unsigned int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
+	unsigned int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
+	if((xIndex < width) && (yIndex < height))
+	{
+		unsigned int index_in = yIndex * width + xIndex;
+		block[threadIdx.y][threadIdx.x] = idata[index_in];
+	}
+
+    // synchronise to ensure all writes to block[][] have completed
+	__syncthreads();
+
+	// write the transposed matrix tile to global memory (odata) in linear order
+	xIndex = blockIdx.y * TILE_DIM + threadIdx.x;
+	yIndex = blockIdx.x * TILE_DIM + threadIdx.y;
+	if((xIndex < height) && (yIndex < width))
+	{
+		unsigned int index_out = yIndex * height + xIndex;
+		odata[index_out] = block[threadIdx.x][threadIdx.y];
 	}
 }
 
@@ -110,6 +184,25 @@ __global__ void kernel_init_one_vec_conv(float* d_one_vec, size_t length)
 	d_one_vec[i] = 1.f;
 }
 
+__global__ void kernel_MatVec_conv(float *device_Mat, float *device_Vect,int matRowSize, int vlength, float *device_ResVect, bool add)
+{
+	int tidx = blockIdx.x * blockDim.x + threadIdx.x;
+	int tidy = blockIdx.y * blockDim.y + threadIdx.y;
+	int tindex= tidx + gridDim.x * BLOCK_DIM * tidy;
+
+
+	if(tindex<matRowSize)
+	{
+		int i;int m= tindex * vlength;
+		if(!add) device_ResVect[tindex]=0.0f;
+		for(i = 0; i < vlength; i++)
+			device_ResVect[tindex] +=  device_Mat[m+i] * device_Vect[i];
+	}
+
+	__syncthreads();
+
+}
+
 Conv2D::Conv2D(std::string name,
 				int out_channels,
 				int kernel_size,
@@ -142,15 +235,15 @@ Tensor* Conv2D::forward(Tensor* input)
 		//std::vector<float> w_v = {1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0,
 		//                     1.0, 0.0, 0.0, 1.0, 2.0, 1.0, 2.0, 1.0, 1.0, 2.0, 2.0, 0.0};
 
-		//std::vector<float> w_v = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+		std::vector<float> w_v = {0.0, 0.0, -1.0, -1.0, -1.0, 1.0, 0.0, -1.0, 0.0};
 
-		weights_ = new Tensor(out_channels_, input->c(), kernel_size_, kernel_size_);
-
+		weights_ = new Tensor(out_channels_, input->c(), kernel_size_, kernel_size_, w_v);
+		weights_trans_ = new Tensor(input->c(), kernel_size_, kernel_size_, out_channels_);
 		//weights_->print_tensor("weight", true, 2, 12);
 
 
-		std::vector<float> b_v = {1.0, 1.0};
-		biases_  = new Tensor(1,1, 1, out_channels_, b_v);	// bias size
+		std::vector<float> b_v = {0.0};
+		biases_  = new Tensor(1, out_channels_,1,1, b_v);	// bias size
 		//bias_desc_ = biases_->tensor();
 	}
 
@@ -172,7 +265,7 @@ Tensor* Conv2D::forward(Tensor* input)
 			std::cout << "output already exist, need reset" << std::endl;
 		}
 
-		ouput_spatial_dim_ =  output_size_.h_ * output_size_.w_;
+		output_spatial_dim_ =  output_size_.h_ * output_size_.w_;
 
 		//output_desc_ = output_->tensor();
 
@@ -181,8 +274,8 @@ Tensor* Conv2D::forward(Tensor* input)
 
 		if (!freeze_)
 		{
-			//std::cout << "Test: uncomment it later" << std::endl;
-			init_weight_bias();
+			std::cout << "Test: uncomment it later" << std::endl;
+			//init_weight_bias();
 		}
 	}
 
@@ -194,6 +287,7 @@ Tensor* Conv2D::forward(Tensor* input)
 	{
 		// may need transpose
 		col_buffer_ = new Tensor(1, 1, kernel_dim_, output_size_.h_ * output_size_.w_);
+		col_buffer_trans_ = new Tensor(1, 1, output_size_.h_ * output_size_.w_, kernel_dim_);
 	}
 	// Conv
 	float* weight_dev = weights_->get_device_ptr().get();
@@ -216,8 +310,70 @@ Tensor* Conv2D::forward(Tensor* input)
 
 Tensor* Conv2D::backward(Tensor* grad_output)
 {
-	//TODO:
-	return nullptr;
+	// initialize grad_output back-propagation space
+	if (grad_input_ == nullptr || batch_size_ != grad_output->n())
+	{
+		grad_output_  = grad_output;
+		grad_weights_ = new Tensor(weights_->shape());
+
+		//grad_weights_->print_tensor("grad_weights_pre",true,1,9);
+
+		grad_biases_  = new Tensor(1, biases_->c());
+
+		//grad_biases_->print_tensor("grad_biases_pre",true,1,1);
+
+		if (grad_input_ == nullptr)
+		{
+			grad_input_ = new Tensor(input_->shape());
+			// grad_input_->print_tensor("grad_input_pre",true,1,5);
+		}
+		else
+		{
+			std::cout << "grad_input_ already exist, need reset" << std::endl;
+		}
+	}
+
+	float* weight_dev = weights_->get_device_ptr().get();
+	float* grad_weights_dev = grad_weights_->get_device_ptr().get();
+	float* grad_output_dev = grad_output_->get_device_ptr().get();
+
+	// gradients of biases
+	float* grad_biases_dev = grad_biases_->get_device_ptr().get();
+	for (int n = 0; n < batch_size_; ++n)
+	{
+		backward_bias_gemv(grad_biases_dev, grad_output_dev + n * grad_output_->size());
+	}
+
+	// gradients of weights
+
+	float* input_dev = input_->get_device_ptr().get();
+	for(int n = 0; n < batch_size_; ++n)
+	{
+		backward_weight_gemm(input_dev + n * input_->size(),
+							 grad_output_dev + n * grad_output_->size(),
+							 grad_weights_dev);
+	}
+	//grad_weights_->print_tensor("grad_weights_post",true,1,9);
+
+	// gradients of input data
+	if (!gradient_stop_)
+	{
+		float* grad_input_dev = grad_input_->get_device_ptr().get();
+
+		// grad_output_->print_tensor("backward grad_output", true, 1, 3);
+
+		for(int n = 0; n < batch_size_; ++n)
+		{
+			backward_input_gemm(grad_output_dev + n * grad_output_->size(),
+								weight_dev,
+								grad_input_dev + n * grad_input_->size());
+		}
+
+		// grad_input_->print_tensor("backward grad_input after", true, 1, 5);
+
+	}
+
+	return grad_input_;
 }
 
 
@@ -239,15 +395,15 @@ void Conv2D::forward_gemm(float* input, float* weights, float* output)
 	conv_im2col_wraper(input, col_buffer_->get_device_ptr().get());
 	col_buff = col_buffer_->get_device_ptr().get();
 
-	col_buffer_->print_tensor("col_buffer", true, 1, 4);
+	// col_buffer_->print_tensor("col_buffer", true, 1, 9);
 
-	// /gemm with weight
+	// gemm with weight
 	dim3 threads, grid;
 	threads = dim3(TILE_DIM, TILE_DIM);
-	grid = dim3(( ouput_spatial_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
+	grid = dim3(( output_spatial_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
 
-	kernel_MatMul_conv<<<grid, threads>>>(weights, col_buff, output, out_channels_ ,kernel_dim_, kernel_dim_, ouput_spatial_dim_ ,
-			 out_channels_, ouput_spatial_dim_, false);
+	kernel_MatMul_conv<<<grid, threads>>>(weights, col_buff, output, out_channels_ ,kernel_dim_, kernel_dim_, output_spatial_dim_ ,
+			 out_channels_, output_spatial_dim_, false);
 
 
 
@@ -257,15 +413,15 @@ void Conv2D::forward_bias(float* output, float* bias)
 {
 	if (d_one_vec_ != nullptr) cudaFree(d_one_vec_);
 
-	cudaMalloc((void**)&d_one_vec_, sizeof(float) * ouput_spatial_dim_);
-	kernel_init_one_vec_conv<<< (ouput_spatial_dim_+BLOCK_DIM_1D-1)/BLOCK_DIM_1D, BLOCK_DIM_1D >>>(d_one_vec_, ouput_spatial_dim_);
+	cudaMalloc((void**)&d_one_vec_, sizeof(float) * output_spatial_dim_);
+	kernel_init_one_vec_conv<<< (output_spatial_dim_+BLOCK_DIM_1D-1)/BLOCK_DIM_1D, BLOCK_DIM_1D >>>(d_one_vec_, output_spatial_dim_);
 
 	dim3 threads, grid;
 	threads = dim3(TILE_DIM, TILE_DIM);
-	grid = dim3(( ouput_spatial_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
+	grid = dim3(( output_spatial_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
 
 	kernel_MatMul_conv<<<grid, threads>>>(bias, d_one_vec_, output, out_channels_, 1, 1,
-			ouput_spatial_dim_, out_channels_, ouput_spatial_dim_, true);
+			output_spatial_dim_, out_channels_, output_spatial_dim_, true);
 }
 
 inline void Conv2D::conv_im2col_wraper(float* data, float* col_buff)
@@ -275,6 +431,15 @@ inline void Conv2D::conv_im2col_wraper(float* data, float* col_buff)
 			    padding_, padding_,
 			    stride_, stride_,
 			    col_buff);
+}
+
+inline void Conv2D::conv_col2im_wraper(float* col_buff, float* data)
+{
+	conv_col2im(col_buff, input_->c(), input_->h(), input_->w(),
+				    kernel_size_, kernel_size_,
+				    padding_, padding_,
+				    stride_, stride_,
+				    data);
 }
 
 void Conv2D::conv_im2col(float* data_im, int channels,
@@ -311,4 +476,100 @@ void Conv2D::conv_im2col(float* data_im, int channels,
 	  pad_w, stride_h, stride_w, height_col, width_col, data_col);
 }
 
+void Conv2D::conv_col2im(float* data_col, int channels, int height, int width,
+    		         int kernel_h, int kernel_w, int pad_h, int pad_w,
+    		         int stride_h, int stride_w, float* data_im)
+{
+	  int height_col = (height + 2 * pad_h - (kernel_h - 1) - 1) / stride_h + 1;
+	  int width_col = (width + 2 * pad_w - (kernel_w - 1) - 1) / stride_w + 1;
+	  int num_kernels = channels * height * width;
+	  // To avoid involving atomic operations, we will launch one kernel per
+	  // bottom dimension, and then in the kernel add up the top dimensions.
+	  // NOLINT_NEXT_LINE(whitespace/operators)
+	  kernel_col2im<<<GET_BLOCKS(num_kernels), CUDA_NUM_THREADS>>>(
+	      num_kernels, data_col, height, width, channels, kernel_h, kernel_w,
+	      pad_h, pad_w, stride_h, stride_w, height_col, width_col, data_im);
+}
+
+void Conv2D::backward_weight_gemm(float* input, float* output, float* weights)
+{
+	float* col_buff = input;
+	conv_im2col_wraper(input, col_buffer_->get_device_ptr().get());
+	col_buff = col_buffer_->get_device_ptr().get();
+
+
+	dim3 threads, grid;
+	// transpose col_buff
+	threads = dim3(TILE_DIM, TILE_DIM);
+	grid = dim3((output_spatial_dim_ + threads.x - 1) / threads.x, (kernel_dim_ + threads.y - 1) / threads.y );
+	kernel_transpose_conv<<< grid, threads>>>(col_buffer_trans_->get_device_ptr().get(), col_buff, output_spatial_dim_, kernel_dim_);
+
+	//col_buffer_trans_->print_tensor("col_buff_trans",true,1,9);
+	// gemm
+	threads = dim3(TILE_DIM, TILE_DIM);
+	grid = dim3(( kernel_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
+
+	kernel_MatMul_conv<<<grid, threads>>>(output, col_buffer_trans_->get_device_ptr().get(), weights, out_channels_, output_spatial_dim_, output_spatial_dim_, kernel_dim_,
+			out_channels_, kernel_dim_, true);
+
+}
+
+void Conv2D::backward_input_gemm(float* output, float* weights, float* input)
+{
+	// need reset, or it will has bug
+
+	if(col_buffer_ != nullptr)
+	{
+		// col_buffer_->reset(col_buffer_->shape());
+		for(int i = 0; i < col_buffer_->len(); i++)
+			col_buffer_->get_host_ptr().get()[i] = 0.0f;
+
+		col_buffer_->transfer_H2D();
+	}
+
+	// col_buffer_->print_tensor("col_buffer_ before", true, 1, 9);
+	float* col_buff = col_buffer_->get_device_ptr().get();
+
+	dim3 threads, grid;
+	// transpose weight
+	threads = dim3(TILE_DIM, TILE_DIM);
+	grid = dim3((kernel_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y );
+	kernel_transpose_conv<<< grid, threads>>>(weights_trans_->get_device_ptr().get(), weights, kernel_dim_, out_channels_);
+
+	// weights_trans_->print_tensor("backward w_Trans", true, 1, 1);
+
+	// gemm
+	threads = dim3(TILE_DIM, TILE_DIM);
+	grid = dim3(( kernel_dim_ + threads.x - 1) / threads.x, (out_channels_ + threads.y - 1) / threads.y);
+
+
+	std::cout << "weights_trans_: " << kernel_dim_ << " * " << out_channels_ << std::endl;
+	std::cout << "output: " << out_channels_ << " * " << output_spatial_dim_ << std::endl;
+	std::cout << "col_buff: " << kernel_dim_ << " * " << output_spatial_dim_ << std::endl;
+	kernel_MatMul_conv<<<grid, threads>>>(weights_trans_->get_device_ptr().get(), output, col_buff, kernel_dim_, out_channels_, out_channels_, output_spatial_dim_,
+			kernel_dim_, output_spatial_dim_, false);
+
+	// col_buffer_->print_tensor("col_buffer_ after", true, 1, 9);
+
+	// col2im
+	conv_col2im_wraper(col_buff, input);
+}
+
+void Conv2D::backward_bias_gemv(float* bias, float* input)
+{
+	if (d_one_vec_ != nullptr) cudaFree(d_one_vec_);
+
+	cudaMalloc((void**)&d_one_vec_, sizeof(float) * output_spatial_dim_);
+	kernel_init_one_vec_conv<<< (output_spatial_dim_+BLOCK_DIM_1D-1)/BLOCK_DIM_1D, BLOCK_DIM_1D >>>(d_one_vec_, output_spatial_dim_);
+
+	dim3 threads,grid;
+
+	// db = (dy) * d_one_vec - dim: (out_channels_ * output_spatial_dim_) (output_spatial_dim_ * 1)
+	int max_thredas= 16 * 16;
+	threads = dim3(16,16); // 16 can change
+	grid = dim3(1, (output_spatial_dim_ + max_thredas - 1)  / max_thredas );
+
+	kernel_MatVec_conv<<< grid, threads>>>(input, d_one_vec_, out_channels_ , output_spatial_dim_,
+				  bias, true);
+}
 

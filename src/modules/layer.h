@@ -37,6 +37,8 @@ class NNLayer
 		void init_weight_bias(unsigned int seed = 0);
 		void update_weights_biases(float learning_rate);
 
+		Tensor* get_grad_weights() { return grad_weights_;}
+
 
 
 

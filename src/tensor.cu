@@ -55,6 +55,8 @@ void Tensor::allocateHostMemory()
     {
         h_data_ = std::shared_ptr<float>(new float[shape_.total_elements()], [&](float *ptr){  delete[] ptr; });
 
+        for(int i = 0; i < shape_.total_elements(); i++) h_data_.get()[i] = 0.0f;
+
         if(!init_vec_.empty())
         {
         	for(int i = 0; i < shape_.total_elements(); i++)
@@ -165,6 +167,37 @@ void Tensor::print_tensor(std::string name, bool view_param = false, int num_bat
 
 		std::cout.unsetf(std::ios::fixed);
 	}
+}
+
+void Tensor::reset(int n, int c, int h, int w)
+{
+    // update size information
+    shape_.n_ = n;
+    shape_.c_ = c;
+    shape_.h_ = h;
+    shape_.w_ = w;
+
+    // terminate current buffers
+    if (h_data_.get() != nullptr)
+    {
+        delete [] h_data_.get();
+
+        host_allocated_ = false;
+    }
+    if (h_data_.get() != nullptr)
+    {
+        cudaFree(h_data_.get());
+        device_allocated_ = false;
+    }
+
+    // create new buffer
+    allocateMemoryIfNotAllocated(shape_);
+
+}
+
+void Tensor::reset(Shape shape)
+{
+	reset(shape.n_, shape.c_, shape.h_, shape.w_);
 }
 
 
